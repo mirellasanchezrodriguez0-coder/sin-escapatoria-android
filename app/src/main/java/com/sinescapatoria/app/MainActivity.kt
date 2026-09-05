@@ -1,6 +1,5 @@
 package com.sinescapatoria.app
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.WebView
@@ -25,25 +24,22 @@ class MainActivity : ComponentActivity() {
 
         setContentView(webView)
 
-        webView.loadUrl("https://sin-escapatoria.onrender.com/")
-    }
+        val uri: Uri? = intent?.data
 
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
+        if (uri?.scheme == "sinescapatoria" &&
+            uri.host == "invite") {
 
-        intent?.data?.let { uri: Uri ->
-            if (uri.scheme == "sinescapatoria" &&
-                uri.host == "invite") {
+            val invite = uri.getQueryParameter("invite")
 
-                val invite = uri.getQueryParameter("invite")
-
-                if (!invite.isNullOrEmpty()) {
-                    webView.loadUrl(
-                        "https://sin-escapatoria.onrender.com/?invite=$invite"
-                    )
-                }
+            if (!invite.isNullOrEmpty()) {
+                webView.loadUrl(
+                    "https://sin-escapatoria.onrender.com/?invite=$invite"
+                )
+                return
             }
         }
+
+        webView.loadUrl("https://sin-escapatoria.onrender.com/")
     }
 
     override fun onBackPressed() {
