@@ -1,0 +1,28 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
+android {
+    namespace = "com.sinescapatoria.app"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.sinescapatoria.app"
+        minSdk = 23
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+    }
+}
+
+dependencies {
+    implementation("androidx.webkit:webkit:1.15.0")
+    implementation("androidx.activity:activity-ktx:1.10.1")
+}
