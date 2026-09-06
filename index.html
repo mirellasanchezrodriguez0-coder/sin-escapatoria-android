@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080808">
+<title>Sin Escapatoria</title>
+<style>
+*{box-sizing:border-box}
+:root{--gold:#d8ae4b;--gold2:#8d651f;--red:#8f1515;--bg:#070707;--panel:#111;--muted:#8e8e8e}
+html,body{margin:0;background:radial-gradient(circle at 50% 0,#24160b 0,#0a0908 28%,#050505 65%);color:#f4f0e7;font-family:Arial,Helvetica,sans-serif;min-height:100%}
+body{padding-bottom:86px}
+.app{width:min(100%,520px);margin:auto;padding:14px 16px 20px}
+.top{height:42px;display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.icon{position:relative;width:38px;height:38px;border:1px solid #3b3b3b;border-radius:12px;background:#111;display:grid;place-items:center;font-size:18px}
+.badge{position:absolute;right:-2px;top:-4px;background:#c21e1e;color:white;border-radius:10px;font-size:9px;min-width:16px;padding:2px 4px;text-align:center;font-weight:900}
+.brand{text-align:center;margin:2px 0 16px}
+.brand img{width:132px;height:132px;object-fit:cover;border-radius:29px;box-shadow:0 0 35px #7b1a0c66,0 8px 25px #000}
+.brandname{font-size:13px;letter-spacing:4px;color:#cba34a;font-weight:900;margin-top:8px}
+.panel{border:1px solid #4a3514;background:linear-gradient(145deg,#171717,#0b0b0b);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 12px 30px #0008}
+.kicker{font-size:10px;letter-spacing:2.3px;color:#b88932;font-weight:900;margin-bottom:8px}
+.codeRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.code{font-size:20px;letter-spacing:2.2px;font-weight:900;color:#f0d38a}
+.copy{border:1px solid #62491b;background:#15110a;color:#d7ad50;border-radius:10px;padding:9px 11px;font-weight:900}
+.small{color:#8d8d8d;font-size:12px;margin-top:10px}
+.btn{width:100%;border:1px solid #75551d;background:linear-gradient(180deg,#21180a,#120e08);color:#e8c66f;border-radius:12px;padding:13px;font-weight:900;letter-spacing:.5px;margin-top:10px}
+.btn.primary{background:linear-gradient(90deg,#7d1515,#330b0b);border-color:#b84a35;color:#fff0cf;box-shadow:0 0 18px #8f151533}
+h2{font-size:21px;margin:0 0 12px;font-weight:900}
+.option{display:flex;gap:12px;align-items:center;border:1px solid #303030;background:#0d0d0d;border-radius:14px;padding:13px;margin:9px 0;cursor:pointer}
+.option.selected{border-color:#b7872c;background:linear-gradient(90deg,#19140b,#0c0c0c);box-shadow:inset 0 0 0 1px #5d4318}
+.radio{width:24px;height:24px;border:1px solid #555;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+.selected .radio{border-color:#d6aa49}
+.selected .radio:after{content:"";width:10px;height:10px;border-radius:50%;background:#d6aa49;box-shadow:0 0 9px #d6aa49}
+.optTitle{font-size:14px;font-weight:900}
+.desc{font-size:12px;color:#909090;margin-top:4px;line-height:1.35}
+.nav{position:fixed;z-index:10;left:0;right:0;bottom:0;background:rgba(9,9,9,.97);border-top:1px solid #35250e;padding:9px 4px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:space-around}
+.nav a{color:#777;text-decoration:none;text-align:center;font-size:9px;min-width:18%;font-weight:800}
+.nav .ico{display:block;font-size:19px;margin-bottom:3px}
+.nav a.active{color:#d3a643}
+.divider{height:1px;background:#252525;margin:14px 0}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);background:#171717;border:1px solid #76531b;color:#eed28b;border-radius:12px;padding:10px 14px;font-size:12px;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="icon">♢<span class="badge">1</span></div>
+    <div class="icon">♙</div>
+    <div class="icon">⚙</div>
+  </div>
+
+  <div class="brand">
+    <img src="app_logo.png" alt="Sin Escapatoria">
+    <div class="brandname">SIN ESCAPATORIA</div>
+  </div>
+
+  <section class="panel">
+    <div class="kicker">CÓDIGO DE AMIGO</div>
+    <div class="codeRow">
+      <div class="code" id="friendCode">SE-0184156C</div>
+      <button class="copy" onclick="copyCode()">⧉</button>
+    </div>
+    <button class="btn" onclick="addFriend()">＋ AÑADIR AMIGO</button>
+    <div class="small" id="friendStatus">Aún no tienes amigos añadidos.</div>
+  </section>
+
+  <section>
+    <div class="kicker">03 · DISPOSITIVOS</div>
+    <h2>¿CÓMO QUERÉIS JUGAR?</h2>
+    <div class="option selected" onclick="choose(this)">
+      <div class="radio"></div><div><div class="optTitle">DOS DISPOSITIVOS</div><div class="desc">Cada jugador juega desde su móvil.</div></div>
+    </div>
+    <div class="option" onclick="choose(this)">
+      <div class="radio"></div><div><div class="optTitle">UN MISMO DISPOSITIVO</div><div class="desc">Pasad el móvil cuando cambie el turno.</div></div>
+    </div>
+  </section>
+
+  <section style="margin-top:26px">
+    <div class="kicker">04 · EXPERIENCIA</div>
+    <h2>¿CÓMO QUERÉIS JUGAR?</h2>
+    <div class="option selected" onclick="choose(this)">
+      <div class="radio"></div><div><div class="optTitle">AVENTURA</div><div class="desc">Partida libre con tablero, eventos y giros.</div></div>
+    </div>
+    <div class="option" onclick="choose(this)">
+      <div class="radio"></div><div><div class="optTitle">PAREJA</div><div class="desc">Conexión, coincidencias y conversaciones.</div></div>
+    </div>
+    <div class="option" onclick="choose(this)">
+      <div class="radio"></div><div><div class="optTitle">RETOS</div><div class="desc">Pruebas rápidas y desafíos.</div></div>
+    </div>
+  </section>
+
+  <button class="btn primary" onclick="startGame()">JUGAR AHORA</button>
+</div>
+
+<nav class="nav">
+  <a class="active" href="#"><span class="ico">⌂</span>INICIO</a>
+  <a href="#" onclick="startGame();return false"><span class="ico">▶</span>JUGAR</a>
+  <a href="#"><span class="ico">♧</span>AMIGOS</a>
+  <a href="#"><span class="ico">♢</span>EVENTOS</a>
+  <a href="#"><span class="ico">♛</span>RANKING</a>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+function choose(el){
+  const parent=el.parentElement;
+  [...parent.querySelectorAll('.option')].forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function toast(t){
+  const x=document.getElementById('toast');x.textContent=t;x.classList.add('show');
+  clearTimeout(window._toast);window._toast=setTimeout(()=>x.classList.remove('show'),1800);
+}
+async function copyCode(){
+  const c=document.getElementById('friendCode').textContent;
+  try{await navigator.clipboard.writeText(c);toast('Código copiado');}
+  catch(e){toast(c);}
+}
+function addFriend(){
+  const c=prompt('Introduce el código de amigo');
+  if(!c)return;
+  document.getElementById('friendStatus').textContent='Código introducido: '+c.trim().toUpperCase();
+  toast('Código de amigo añadido');
+}
+function startGame(){
+  toast('Preparando partida…');
+  setTimeout(()=>location.href='https://sin-escapatoria.onrender.com/',350);
+}
+</script>
+</body>
+</html>
