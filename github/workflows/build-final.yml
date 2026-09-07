@@ -1,0 +1,94 @@
+name: Crear APK Final Sin Escapatoria
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-final:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Corregir juego para Android
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path("app/src/main/assets/index.html")
+          s = p.read_text(encoding="utf-8")
+
+          s = re.sub(
+              r"function friendIdentity\(\)\{.*?\}",
+              "function friendIdentity(){let id=localStorage.getItem('se_friend_id');if(!id){id='SE-'+Math.random().toString(36).slice(2,10).toUpperCase();localStorage.setItem('se_friend_id',id)}return id}",
+              s,
+              count=1,
+              flags=re.S
+          )
+
+          s = re.sub(
+              r"function inviteFriend\(friendCode\)\{.*?\}",
+              "function inviteFriend(friendCode){if(!room)return toast('Primero crea una partida');const url='https://sin-escapatoria.onrender.com/?invite='+encodeURIComponent(room)+'&from='+encodeURIComponent(friendIdentity());navigator.clipboard?.writeText(url);toast('Enlace copiado')}",
+              s,
+              count=1,
+              flags=re.S
+          )
+
+          s = re.sub(
+              r"function inviteUrl\(\)\{.*?\}",
+              "function inviteUrl(){return 'https://sin-escapatoria.onrender.com/?invite='+encodeURIComponent(room)}",
+              s,
+              count=1,
+              flags=re.S
+          )
+
+          s = s.replace(
+              "/^[A-Z0-9]{\\n6\\n}$/.test(c)",
+              "/^[A-Z0-9]{6}$/.test(c)"
+          )
+
+          s = s.replace(
+              "/^[A-Z0-9]{\n6\n}$/.test(c)",
+              "/^[A-Z0-9]{6}$/.test(c)"
+          )
+
+          p.write_text(s, encoding="utf-8")
+
+      - name: Comprobar correcciones
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          s = Path("app/src/main/assets/index.html").read_text(
+              encoding="utf-8"
+          )
+
+          assert "/^[A-Z0-9]{6}$/" in s
+          assert "https://sin-escapatoria.onrender.com/?invite=" in s
+
+          print("Correcciones comprobadas correctamente")
+
+      - name: Compilar APK
+        run: gradle assembleDebug
+
+      - name: Guardar APK final
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sin-Escapatoria-APK-FINAL
+          path: app/build/outputs/apk/debug/app-debug.apk
