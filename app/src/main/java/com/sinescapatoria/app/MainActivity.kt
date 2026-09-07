@@ -16,9 +16,25 @@ class MainActivity : ComponentActivity() {
 
         webView = WebView(this)
 
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+
+            allowFileAccess = true
+            allowContentAccess = true
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
+
+            cacheMode = WebSettings.LOAD_DEFAULT
+        }
+
         webView.webViewClient = object : WebViewClient() {
 
-            override fun onPageFinished(view: WebView, url: String) {
+            override fun onPageFinished(
+                view: WebView,
+                url: String
+            ) {
                 super.onPageFinished(view, url)
 
                 view.evaluateJavascript(
@@ -30,93 +46,185 @@ class MainActivity : ComponentActivity() {
 
                         const originalFetch =
                             window.fetch.bind(window);
-                                                    /*
-                         * =====================================================
-                         * COMPATIBILIDAD ANDROID WEBVIEW
-                         * =====================================================
+
+
+                        /*
+                         * ==========================================
+                         * UUID COMPATIBLE CON ANDROID WEBVIEW
+                         * ==========================================
                          */
 
                         try {
 
-                            if (!window.crypto) {
-                                window.crypto = {};
-                            }
+                            if (
+                                window.crypto &&
+                                !window.crypto.randomUUID
+                            ) {
 
-                            if (!window.crypto.randomUUID) {
+                                Object.defineProperty(
+                                    window.crypto,
+                                    'randomUUID',
+                                    {
+                                        configurable: true,
+                                        value: function () {
 
-                                window.crypto.randomUUID = function () {
+                                            const bytes =
+                                                new Uint8Array(16);
 
-                                    const bytes =
-                                        new Uint8Array(16);
+                                            if (
+                                                window.crypto
+                                                    .getRandomValues
+                                            ) {
 
-                                    if (
-                                        window.crypto.getRandomValues
-                                    ) {
+                                                window.crypto
+                                                    .getRandomValues(
+                                                        bytes
+                                                    );
 
-                                        window.crypto.getRandomValues(
-                                            bytes
-                                        );
+                                            } else {
 
-                                    } else {
+                                                for (
+                                                    let i = 0;
+                                                    i < 16;
+                                                    i++
+                                                ) {
+                                                    bytes[i] =
+                                                        Math.floor(
+                                                            Math.random() *
+                                                            256
+                                                        );
+                                                }
+                                            }
 
-                                        for (
-                                            let i = 0;
-                                            i < bytes.length;
-                                            i++
-                                        ) {
+                                            bytes[6] =
+                                                (bytes[6] & 0x0f) |
+                                                0x40;
 
-                                            bytes[i] =
-                                                Math.floor(
-                                                    Math.random() * 256
+                                            bytes[8] =
+                                                (bytes[8] & 0x3f) |
+                                                0x80;
+
+                                            const h =
+                                                Array.from(
+                                                    bytes,
+                                                    function (b) {
+                                                        return b
+                                                            .toString(16)
+                                                            .padStart(
+                                                                2,
+                                                                '0'
+                                                            );
+                                                    }
                                                 );
+
+                                            return (
+                                                h.slice(0, 4).join('') +
+                                                '-' +
+                                                h.slice(4, 6).join('') +
+                                                '-' +
+                                                h.slice(6, 8).join('') +
+                                                '-' +
+                                                h.slice(8, 10).join('') +
+                                                '-' +
+                                                h.slice(10, 16).join('')
+                                            );
                                         }
                                     }
-                                                                        /*
-                                     * UUID v4
-                                     */
-
-                                    bytes[6] =
-                                        (bytes[6] & 0x0f) | 0x40;
-
-                                    bytes[8] =
-                                        (bytes[8] & 0x3f) | 0x80;
-
-                                    const h =
-                                        Array.from(
-                                            bytes,
-                                            b =>
-                                                b.toString(16)
-                                                 .padStart(2, '0')
-                                        );
-
-                                    return (
-                                        h.slice(0, 4).join('') +
-                                        '-' +
-                                        h.slice(4, 6).join('') +
-                                        '-' +
-                                        h.slice(6, 8).join('') +
-                                        '-' +
-                                        h.slice(8, 10).join('') +
-                                        '-' +
-                                        h.slice(10, 16).join('')
-                                    );
-                                };
+                                );
                             }
 
                         } catch (e) {
 
                             console.log(
-                                'Compatibilidad UUID:',
+                                'UUID fallback:',
                                 e
                             );
                         }
-                                                    } catch (e) {
+
+
+                        /*
+                         * ==========================================
+                         * REDIRECCIÓN DE PETICIONES
+                         * ==========================================
+                         */
+
+                        window.fetch = function (
+                            input,
+                            init
+                        ) {
+
+                            try {
+
+                                const u =
+                                    typeof input === 'string'
+                                        ? input
+                                        : (
+                                            input &&
+                                            input.url
+                                        ) || '';
+
+
+                                /*
+                                 * cards.json
+                                 */
+
+                                if (
+                                    u.indexOf('cards.json') !== -1 &&
+                                    u.indexOf('onrender.com') === -1
+                                ) {
+
+                                    return originalFetch(
+                                        REMOTE +
+                                        '/cards.json?x=' +
+                                        Date.now(),
+                                        init
+                                    );
+                                }
+
+
+                                /*
+                                 * API RELATIVA
+                                 */
+
+                                if (
+                                    u.indexOf('/api/') === 0
+                                ) {
+
+                                    return originalFetch(
+                                        REMOTE + u,
+                                        init
+                                    );
+                                }
+
+
+                                /*
+                                 * API desde file://
+                                 */
+
+                                if (
+                                    u.indexOf('file:///api/') === 0
+                                ) {
+
+                                    const path =
+                                        u.replace(
+                                            'file://',
+                                            ''
+                                        );
+
+                                    return originalFetch(
+                                        REMOTE + path,
+                                        init
+                                    );
+                                }
+
+                            } catch (e) {
 
                                 console.log(
-                                    'Error redirección fetch:',
+                                    'Fetch Android:',
                                     e
                                 );
                             }
+
 
                             return originalFetch(
                                 input,
@@ -124,10 +232,11 @@ class MainActivity : ComponentActivity() {
                             );
                         };
 
+
                         /*
-                         * =====================================================
-                         * RECUPERAR NOMBRES GUARDADOS
-                         * =====================================================
+                         * ==========================================
+                         * RECUPERAR NOMBRES
+                         * ==========================================
                          */
 
                         const savedA =
@@ -140,18 +249,11 @@ class MainActivity : ComponentActivity() {
                                 'se_name_B'
                             ) || '';
 
+
                         /*
-                         * =====================================================
-                         * IMPORTANTE
-                         *
-                         * index.html utiliza:
-                         *
-                         * let profile
-                         * let playerName
-                         *
-                         * Por eso hay que modificar esas variables
-                         * directamente y NO window.profile.
-                         * =====================================================
+                         * ==========================================
+                         * RESTAURAR PERFIL Y JUGADOR
+                         * ==========================================
                          */
 
                         try {
@@ -164,22 +266,22 @@ class MainActivity : ComponentActivity() {
                                 !playerName &&
                                 savedA
                             ) {
-
-                                playerName =
-                                    savedA;
+                                playerName = savedA;
                             }
 
                         } catch (e) {
 
                             console.log(
-                                'Error recuperando perfil:',
+                                'Perfil Android:',
                                 e
                             );
                         }
-                                                /*
-                         * =====================================================
-                         * ELEMENTOS DE LA INTERFAZ
-                         * =====================================================
+
+
+                        /*
+                         * ==========================================
+                         * ELEMENTOS
+                         * ==========================================
                          */
 
                         const area =
@@ -197,10 +299,11 @@ class MainActivity : ComponentActivity() {
                                 'name'
                             );
 
+
                         /*
-                         * =====================================================
-                         * SI NO EXISTE NOMBRE, MOSTRAR FORMULARIO
-                         * =====================================================
+                         * ==========================================
+                         * SI NO HAY NOMBRE
+                         * ==========================================
                          */
 
                         if (
@@ -213,35 +316,32 @@ class MainActivity : ComponentActivity() {
                             );
 
                             if (name) {
-
                                 name.value = '';
-
-                                name.focus();
                             }
 
                             if (note) {
-
                                 note.textContent =
                                     'Escribe tu nombre para comenzar.';
                             }
                         }
 
+
                         /*
-                         * =====================================================
-                         * MOSTRAR PERFIL A
-                         * =====================================================
+                         * ==========================================
+                         * PERFIL A
+                         * ==========================================
                          */
 
                         if (savedA) {
 
-                            const btn =
+                            const btnA =
                                 document.getElementById(
                                     'aBtn'
                                 );
 
-                            if (btn) {
+                            if (btnA) {
 
-                                btn.innerHTML =
+                                btnA.innerHTML =
                                     '<b>' +
                                     savedA.replace(
                                         /[&<>"']/g,
@@ -250,7 +350,8 @@ class MainActivity : ComponentActivity() {
                                     '</b>' +
                                     '<span>Seleccionado</span>';
                             }
-                                                        if (note) {
+
+                            if (note) {
 
                                 note.textContent =
                                     'Perfil: ' +
@@ -258,22 +359,23 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+
                         /*
-                         * =====================================================
-                         * MOSTRAR PERFIL B
-                         * =====================================================
+                         * ==========================================
+                         * PERFIL B
+                         * ==========================================
                          */
 
                         if (savedB) {
 
-                            const btn =
+                            const btnB =
                                 document.getElementById(
                                     'bBtn'
                                 );
 
-                            if (btn) {
+                            if (btnB) {
 
-                                btn.innerHTML =
+                                btnB.innerHTML =
                                     '<b>' +
                                     savedB.replace(
                                         /[&<>"']/g,
@@ -289,75 +391,27 @@ class MainActivity : ComponentActivity() {
                     null
                 )
             }
-        };
-
-        /*
-         * =========================================================
-         * CONFIGURACIÓN DEL WEBVIEW
-         * =========================================================
-         */
-
-        webView.settings.apply {
-
-            javaScriptEnabled = true
-
-            domStorageEnabled = true
-
-            databaseEnabled = true
-                        allowFileAccess = true
-
-            allowContentAccess = true
-
-            allowFileAccessFromFileURLs = true
-
-            allowUniversalAccessFromFileURLs = true
-
-            cacheMode =
-                WebSettings.LOAD_DEFAULT
         }
 
-        /*
-         * =========================================================
-         * MOSTRAR WEBVIEW
-         * =========================================================
-         */
-
         setContentView(webView)
-
-        /*
-         * =========================================================
-         * CARGAR JUEGO
-         * =========================================================
-         */
 
         loadGame(intent?.data)
     }
 
-    /*
-     * =============================================================
-     * CARGAR JUEGO
-     * =============================================================
-     */
 
     private fun loadGame(uri: Uri?) {
 
         val invite =
             uri
                 ?.takeIf {
-                    it.scheme ==
-                        "sinescapatoria" &&
-                    it.host ==
-                        "invite"
+                    it.scheme == "sinescapatoria" &&
+                    it.host == "invite"
                 }
-                ?.getQueryParameter(
-                    "invite"
-                )
+                ?.getQueryParameter("invite")
                 ?.trim()
-                        val target =
 
-            if (
-                !invite.isNullOrEmpty()
-            ) {
+        val target =
+            if (!invite.isNullOrEmpty()) {
 
                 "file:///android_asset/index.html" +
                     "?invite=" +
@@ -371,18 +425,11 @@ class MainActivity : ComponentActivity() {
         webView.loadUrl(target)
     }
 
-    /*
-     * =============================================================
-     * BOTÓN ATRÁS DE ANDROID
-     * =============================================================
-     */
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
 
-        if (
-            webView.canGoBack()
-        ) {
+        if (webView.canGoBack()) {
 
             webView.goBack()
 
@@ -392,20 +439,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
-
-        if (
-            webView.canGoBack()
-        ) {
-
-            webView.goBack()
-
-        } else {
-
-            super.onBackPressed()
-        }
-    }
-}
-                                  
-                    
