@@ -2,46 +2,49 @@ package com.sinescapatoria.app
 
 import android.net.Uri
 import android.os.Bundle
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 
 class MainActivity : ComponentActivity() {
-
     private lateinit var webView: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         webView = WebView(this)
-
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.allowFileAccess = true
-        webView.settings.allowContentAccess = true
-
         webView.webViewClient = WebViewClient()
 
-        setContentView(webView)
-
-        val uri: Uri? = intent?.data
-
-        if (uri?.scheme == "sinescapatoria" &&
-            uri.host == "invite") {
-
-            val invite = uri.getQueryParameter("invite")
-
-            if (!invite.isNullOrEmpty()) {
-                webView.loadUrl(
-                    "https://sin-escapatoria.onrender.com/?invite=$invite"
-                )
-                return
-            }
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            cacheMode = WebSettings.LOAD_DEFAULT
         }
 
-        webView.loadUrl("https://sin-escapatoria.onrender.com/")
+        setContentView(webView)
+        loadGame(intent?.data)
     }
 
+    private fun loadGame(uri: Uri?) {
+        val invite = uri
+            ?.takeIf { it.scheme == "sinescapatoria" && it.host == "invite" }
+            ?.getQueryParameter("invite")
+            ?.trim()
+
+        val target = if (!invite.isNullOrEmpty()) {
+            "file:///android_asset/index.html?invite=${Uri.encode(invite)}"
+        } else {
+            "file:///android_asset/index.html"
+        }
+
+        webView.loadUrl(target)
+    }
+
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (webView.canGoBack()) {
             webView.goBack()
