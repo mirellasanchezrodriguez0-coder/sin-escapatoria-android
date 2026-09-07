@@ -8,6 +8,7 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 
 class MainActivity : ComponentActivity() {
+
     private lateinit var webView: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,6 +17,7 @@ class MainActivity : ComponentActivity() {
         webView = WebView(this)
 
         webView.webViewClient = object : WebViewClient() {
+
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
 
@@ -31,8 +33,10 @@ class MainActivity : ComponentActivity() {
                                     ? input
                                     : ((input && input.url) || '');
 
-                                if (u.indexOf('cards.json') !== -1 &&
-                                    u.indexOf('onrender.com') === -1) {
+                                if (
+                                    u.indexOf('cards.json') !== -1 &&
+                                    u.indexOf('onrender.com') === -1
+                                ) {
                                     return originalFetch(
                                         REMOTE + '/cards.json?x=' + Date.now(),
                                         init
@@ -43,19 +47,36 @@ class MainActivity : ComponentActivity() {
                             return originalFetch(input, init);
                         };
 
-                        const savedA = localStorage.getItem('se_name_A') || '';
-                        const savedB = localStorage.getItem('se_name_B') || '';
+                        const savedA =
+                            localStorage.getItem('se_name_A') || '';
 
-                        if (!window.profile) window.profile = 'A';
+                        const savedB =
+                            localStorage.getItem('se_name_B') || '';
 
-                        if (!window.playerName && savedA) {
-                            window.profile = 'A';
-                            window.playerName = savedA;
-                        }
+                        /*
+                         * IMPORTANTE:
+                         * index.html utiliza las variables let
+                         * "profile" y "playerName".
+                         * No sirve modificar window.profile/window.playerName.
+                         */
+                        try {
+                            if (!profile) {
+                                profile = 'A';
+                            }
 
-                        const area = document.getElementById('nameArea');
-                        const note = document.getElementById('profileNote');
-                        const name = document.getElementById('name');
+                            if (!playerName && savedA) {
+                                playerName = savedA;
+                            }
+                        } catch (e) {}
+
+                        const area =
+                            document.getElementById('nameArea');
+
+                        const note =
+                            document.getElementById('profileNote');
+
+                        const name =
+                            document.getElementById('name');
 
                         if (area && !savedA) {
                             area.classList.remove('hidden');
@@ -72,19 +93,36 @@ class MainActivity : ComponentActivity() {
                         }
 
                         if (savedA) {
-                            const btn = document.getElementById('aBtn');
+                            const btn =
+                                document.getElementById('aBtn');
+
                             if (btn) {
                                 btn.innerHTML =
-                                    '<b>' + savedA.replace(/[&<>"\']/g, '') +
+                                    '<b>' +
+                                    savedA.replace(
+                                        /[&<>"']/g,
+                                        ''
+                                    ) +
                                     '</b><span>Seleccionado</span>';
+                            }
+
+                            if (note) {
+                                note.textContent =
+                                    'Perfil: ' + savedA;
                             }
                         }
 
                         if (savedB) {
-                            const btn = document.getElementById('bBtn');
+                            const btn =
+                                document.getElementById('bBtn');
+
                             if (btn) {
                                 btn.innerHTML =
-                                    '<b>' + savedB.replace(/[&<>"\']/g, '') +
+                                    '<b>' +
+                                    savedB.replace(
+                                        /[&<>"']/g,
+                                        ''
+                                    ) +
                                     '</b><span>Seleccionado</span>';
                             }
                         }
@@ -99,34 +137,44 @@ class MainActivity : ComponentActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
+
             allowFileAccess = true
             allowContentAccess = true
+
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
+
             cacheMode = WebSettings.LOAD_DEFAULT
         }
 
         setContentView(webView)
+
         loadGame(intent?.data)
     }
 
     private fun loadGame(uri: Uri?) {
+
         val invite = uri
-            ?.takeIf { it.scheme == "sinescapatoria" && it.host == "invite" }
+            ?.takeIf {
+                it.scheme == "sinescapatoria" &&
+                it.host == "invite"
+            }
             ?.getQueryParameter("invite")
             ?.trim()
 
-        val target = if (!invite.isNullOrEmpty()) {
-            "file:///android_asset/index.html?invite=${Uri.encode(invite)}"
-        } else {
-            "file:///android_asset/index.html"
-        }
+        val target =
+            if (!invite.isNullOrEmpty()) {
+                "file:///android_asset/index.html?invite=${Uri.encode(invite)}"
+            } else {
+                "file:///android_asset/index.html"
+            }
 
         webView.loadUrl(target)
     }
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
+
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
